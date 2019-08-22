@@ -23,6 +23,21 @@ app.get('/', (req, res) => {
 	res.send('Hello World!');
 });
 
+app.post('/api/login', (req, res) => {
+	logHit('POST', 'Login', req.body);
+	const { email } = req.body;
+	const Person = mongoose.model('Person', Schemas.personSchema);
+	Person.findOne({ email }, (err, persons) => {
+		if (err) {
+			console.error(err);
+			res.send({ error: 'Unknown error occurred, please reach out to support'})
+		}
+		else {
+			res.send({ result: true });
+		}
+	});
+})
+
 app.get('/api/relationship-types', (req, res) => {
 	logHit('GET', 'RelationshipTypes');
 	const RelationshipType = mongoose.model('RelationshipType', Schemas.relationshipTypeSchema);
@@ -88,7 +103,7 @@ app.get('/api/persons/:email', (req, res) => {
 			res.send({ error: 'Unknown error occurred, please reach out to support'})
 		}
 		else {
-			res.send(persons);	
+			res.send(persons);
 		}
 	});
 })
@@ -138,6 +153,21 @@ app.get('/api/trees', (req, res) => {
 	});
 });
 
+app.get('/api/trees/:_id', (req, res) => {
+	logHit('GET', 'Trees', req.params);
+	const { _id } = req.params;
+	const Tree = mongoose.model('Tree', Schemas.treeSchema);
+	Tree.findOne({ _id }, (err, tree) => {
+		if (err) {
+			console.error(err);
+			res.send({ error: 'Unknown error occurred, please reach out to support'})
+		}
+		else {
+			res.send(tree);
+		}
+	});
+});
+
 // curl -d '{"name": "Test Tree 1", "userId": "5d5c0bd048401bdce50dad1d"}' -H "Content-Type: application/json" -X POST http://localhost:3001/api/trees
 app.post('/api/trees', (req, res) => {
 	logHit('POST', 'Trees', req.body);
@@ -150,7 +180,7 @@ app.post('/api/trees', (req, res) => {
 		}
 		else {
 			const Person = mongoose.model('Person', Schemas.personSchema);
-			Person.update(
+			Person.updateOne(
 				{ _id: userId },
 				{ $push: { trees: treeRes } },
 				(err, personRes) => {
