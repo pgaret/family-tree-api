@@ -1,9 +1,10 @@
 import express from 'express';
-import mongoose, { mongo } from 'mongoose';
+import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 
 import Schemas from "./schemas";
+import { searchTree } from './utilities';
 
 const app = express();
 // Connect to mongodb
@@ -27,13 +28,14 @@ app.post('/api/login', (req, res) => {
 	logHit('POST', 'Login', req.body);
 	const { email } = req.body;
 	const Person = mongoose.model('Person', Schemas.personSchema);
-	Person.findOne({ email }, (err, persons) => {
+	Person.findOne({ email }, (err, person) => {
 		if (err) {
 			console.error(err);
 			res.send({ error: 'Unknown error occurred, please reach out to support'})
 		}
 		else {
-			res.send({ result: true });
+			console.log(email, person);
+			res.send({ result: person._id });
 		}
 	});
 })
@@ -111,15 +113,38 @@ app.get('/api/persons/:email', (req, res) => {
 // curl -d '{"email": "peregringaret@gmail.com", "firstName":"Peregrin", "middleName": "Hazard", "lastName": "Garet", "birthDay": 16, "birthMonth": 7, "birthYear": 1992, "profileImage": -1, "images": [], "relationships": []}' -H "Content-Type: application/json" -X POST http://localhost:3001/api/persons
 app.post('/api/persons', (req, res) => {
 	logHit('POST', 'Persons', req.body);
-	const { email, firstName, middleName, lastName, maidenName, birthDay, birthMonth, birthYear, profileImage, images, relationships, trees } = req.body;
+	const {
+		email, parentId, childId,
+		firstName, middleName, lastName, maidenName,
+		birthDay, birthMonth, birthYear,
+		profileImage, images, relationships, treeId
+	} = req.body;
 	const Person = mongoose.model('Person', Schemas.personSchema);
-	Person.create({ email, firstName, middleName, lastName, maidenName, birthDay, birthMonth, birthYear, profileImage, images, relationships, trees }, (err, mongoRes) => {
+	Person.create({ email, firstName, middleName, lastName, maidenName, birthDay, birthMonth, birthYear, profileImage, images, relationships, trees: [treeId] }, (err, person) => {
+		console.log(person);
 		if (err) {
 			console.error(err);
 			res.send({ error: 'Unknown error occurred, please reach out to support' });
 		}
 		else {
-			res.send(mongoRes);
+			Tree.findOne({ _id: treeId }, (err, tree) => {
+				if (err) {
+					console.error(err);
+					res.send({ error: 'Unknown error occurred, please reach out to support'})
+				}
+				else {
+					if (relationships.length > 0) {
+
+					} else {
+						const newPerson = { _id: person._id, parents: [], children: [] }
+						Tree.update(
+							{ _id: treeId},
+							{ $push: { tree: { newPerson }}}
+						)
+					}
+					res.send(tree);
+				}
+			});
 		}
 	});
 });
@@ -138,6 +163,7 @@ app.put('/api/persons', (req, res) => {
 				res.send({ error: 'Failed to update user with new data, please reach out to support' });
 			}
 			else {
+				
 				res.send({ personRes });
 			}
 		}
@@ -179,17 +205,19 @@ app.post('/api/trees', (req, res) => {
 			res.send({ error: 'Failed to create tree, please reach out to support' });
 		}
 		else {
+			console.log('Created tree ', treeRes);
 			const Person = mongoose.model('Person', Schemas.personSchema);
 			Person.updateOne(
 				{ _id: userId },
-				{ $push: { trees: treeRes } },
+				{ $push: { trees: treeRes._id } },
 				(err, personRes) => {
 					if (err) {
 						console.log(err);
 						res.send({ error: 'Failed to update user with new tree, please reach out to support' });
 					}
 					else {
-						res.send({ personRes });
+						console.log(`Added tree ${treeRes._id} to user ${userId} `, personRes);
+						res.send({ treeRes, personRes });
 					}
 				}
 			);
