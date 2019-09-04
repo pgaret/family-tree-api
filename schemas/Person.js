@@ -13,8 +13,7 @@ const personSchema = mongoose.Schema({
 	birthYear: Number,
 	profileImage: Number,
 	images: [String],
-	relationships: [relationshipSchema],
-	trees: [treeSchema]
+	trees: [mongoose.SchemaTypes.ObjectId]
 });
 
 export default personSchema;

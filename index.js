@@ -124,13 +124,15 @@ app.post('/api/persons', (req, res) => {
 		profileImage, images, relationships, treeId
 	} = req.body;
 	const Person = mongoose.model('Person', Schemas.personSchema);
-	Person.create({ email, firstName, middleName, lastName, maidenName, birthDay, birthMonth, birthYear, profileImage, images, relationships, trees: [treeId] }, (err, person) => {
+	const trees = treeId ? [treeId] : [];
+	Person.create({ email, firstName, middleName, lastName, maidenName, birthDay, birthMonth, birthYear, profileImage, images, relationships, trees: trees }, (err, person) => {
 		console.log(person);
 		if (err) {
 			console.error(err);
 			res.send({ error: 'Unknown error occurred, please reach out to support' });
 		}
 		else {
+			const Tree = mongoose.model('Tree', Schemas.treeSchema);
 			Tree.findOne({ _id: treeId }, (err, tree) => {
 				if (err) {
 					console.error(err);
@@ -140,7 +142,7 @@ app.post('/api/persons', (req, res) => {
 					if (relationships.length > 0) {
 
 					} else {
-						const newPerson = { _id: person._id, parents: [], children: [] }
+						const newPerson = { userId: person._id, children: [] }
 						Tree.update(
 							{ _id: treeId},
 							{ $push: { tree: { newPerson }}}
@@ -205,7 +207,8 @@ app.post('/api/trees', (req, res) => {
 	logHit('POST', 'Trees', req.body);
 	const { name, userId } = req.body;
 	const Tree = mongoose.model('Tree', Schemas.treeSchema);
-	Tree.create({ name }, (err, treeRes) => {
+	const firstChild = { userId, children: [] };
+	Tree.create({ name, children: [firstChild] }, (err, treeRes) => {
 		if (err) {
 			console.log(err);
 			res.send({ error: 'Failed to create tree, please reach out to support' });
