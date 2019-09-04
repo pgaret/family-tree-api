@@ -35,10 +35,14 @@ app.post('/api/login', (req, res) => {
 		}
 		else {
 			console.log(email, person);
-			res.send({ result: person._id });
+			if (person) {
+				res.send({ result: person._id });
+			} else {
+				res.send({ error: 'Person does not exist '})
+			}
 		}
 	});
-})
+});
 
 app.get('/api/relationship-types', (req, res) => {
 	logHit('GET', 'RelationshipTypes');
@@ -95,11 +99,11 @@ app.get('/api/persons', (req, res) => {
 	});
 });
 
-app.get('/api/persons/:email', (req, res) => {
+app.get('/api/persons/:id', (req, res) => {
 	logHit('GET', 'Persons', req.params);
-	const { email } = req.params;
+	const { id } = req.params;
 	const Person = mongoose.model('Person', Schemas.personSchema);
-	Person.findOne({ email }, (err, persons) => {
+	Person.findById(id, (err, persons) => {
 		if (err) {
 			console.error(err);
 			res.send({ error: 'Unknown error occurred, please reach out to support'})
@@ -163,7 +167,7 @@ app.put('/api/persons', (req, res) => {
 				res.send({ error: 'Failed to update user with new data, please reach out to support' });
 			}
 			else {
-				
+
 				res.send({ personRes });
 			}
 		}
@@ -179,11 +183,13 @@ app.get('/api/trees', (req, res) => {
 	});
 });
 
-app.get('/api/trees/:_id', (req, res) => {
+app.get('/api/trees/:id', (req, res) => {
 	logHit('GET', 'Trees', req.params);
-	const { _id } = req.params;
+	const { id } = req.params;
 	const Tree = mongoose.model('Tree', Schemas.treeSchema);
-	Tree.findOne({ _id }, (err, tree) => {
+	Tree.findById(id, (err, tree) => {
+		console.log('Tried to find a tree')
+		console.log(err, tree);
 		if (err) {
 			console.error(err);
 			res.send({ error: 'Unknown error occurred, please reach out to support'})
@@ -209,7 +215,7 @@ app.post('/api/trees', (req, res) => {
 			const Person = mongoose.model('Person', Schemas.personSchema);
 			Person.updateOne(
 				{ _id: userId },
-				{ $push: { trees: treeRes._id } },
+				{ $push: { trees: treeRes } },
 				(err, personRes) => {
 					if (err) {
 						console.log(err);
