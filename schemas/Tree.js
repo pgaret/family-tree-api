@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+// Only used here
 const nodeSchema = mongoose.Schema({
     userId: mongoose.SchemaTypes.ObjectId,
     children: Array
